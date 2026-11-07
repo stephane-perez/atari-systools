@@ -1,6 +1,6 @@
-| RAM_SIZE : limite a 2560 Ko
+| RAM_SIZE: limit to 2560 KB
 	.equ	LIMIT,0x280000
 	.macro	SIZE_TXT
-	.ascii	"2,5Mo"
+	.ascii	"2.5 MB"
 	.endm
 	.include	"ram_size.s"

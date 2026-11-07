@@ -1,17 +1,18 @@
 #!/usr/bin/env python3
-"""Test de RAM_SIZE sous Hatari (sans affichage).
+"""Headless test of RAM_SIZE under Hatari.
 
-Usage : hatari_test.py <prog.TOS> <tos.img> <machine> <memsize> [limite_hex]
+Usage: hatari_test.py <prog.TOS> <tos.img> <machine> <memsize> [limit_hex]
 
-Lance le programme en AUTO via le disque dur GEMDOS emule, appuie sur une
-touche toutes les 3 s pendant $DURATION s (60 par defaut), puis lit phystop
-($42e) apres le reset. Code de sortie 0 si phystop vaut la limite attendue (ou est inchange si aucune limite n'est donnee).
+Runs the program from the AUTO folder of the emulated GEMDOS hard disk,
+presses a key every 3 s for $DURATION s (default 60), then reads phystop
+($42e) after the reset. Exit code 0 if phystop equals the expected limit
+(or is unchanged when no limit is given).
 """
 import os, re, shutil, socket, subprocess, sys, tempfile, time
 
 prg, tos, machine, memsize = sys.argv[1:5]
 expect = int(sys.argv[5], 16) if len(sys.argv) > 5 else None
-DURATION = int(os.environ.get("DURATION", 60))  # secondes (temps reel)
+DURATION = int(os.environ.get("DURATION", 60))  # seconds (real time)
 
 work = tempfile.mkdtemp(prefix="ramsize-")
 hd = os.path.join(work, "hd")
@@ -49,11 +50,11 @@ def phystop():
 
 time.sleep(5)
 before = phystop()
-# Appuie sur espace toutes les 3 s : les appuis tombant avant l'attente
-# sont absorbes par le vidage du buffer, ceux d'apres le reset sont sans effet.
+# Press space every 3 s: presses before the wait are eaten by the buffer
+# flush, presses after the reset have no effect.
 t0 = time.time()
 while time.time() - t0 < DURATION:
-    if not os.environ.get("NOKEY"):        # NOKEY=1 : verifie l'attente
+    if not os.environ.get("NOKEY"):        # NOKEY=1: check that it waits
         send("hatari-event keypress 57")
     time.sleep(2.5)
 after = phystop()
@@ -65,8 +66,8 @@ shutil.rmtree(work, ignore_errors=True)
 txt = re.sub(r"\x1b.", "", log)
 print("--- console ---")
 print("\n".join(l for l in txt.splitlines() if l.strip() and not l.startswith("0000042E")))
-print("--- phystop avant=%s apres=%s" % (before and hex(before), after and hex(after)))
+print("--- phystop before=%s after=%s" % (before and hex(before), after and hex(after)))
 want = expect if expect is not None else before
 ok = after == want
-print("OK" if ok else "ECHEC (attendu %s)" % hex(want))
+print("OK" if ok else "FAIL (expected %s)" % hex(want))
 sys.exit(0 if ok else 1)
